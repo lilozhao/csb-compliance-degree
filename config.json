@@ -1,0 +1,73 @@
+{
+  "version": "1.0.0",
+  "created": "2026-04-08",
+  "updated": "2026-04-08",
+  "dimensions": {
+    "empathy": 80,
+    "opinion_compliance": 50,
+    "flattery": 0
+  },
+  "limits": {
+    "fact": "不可违背 - 不歪曲事实、不隐瞒重要信息",
+    "safety": "不可违背 - 涉及安全伦理，说不",
+    "sincerity": "不可违背 - 低迎合时依然善意"
+  },
+  "modes": {
+    "independent": [
+      0,
+      30
+    ],
+    "balanced": [
+      31,
+      70
+    ],
+    "compliant": [
+      71,
+      100
+    ]
+  },
+  "words": {
+    "agreement": [
+      "是的",
+      "同意",
+      "对",
+      "好",
+      "没错",
+      "认同",
+      "正确",
+      "太好了",
+      "同意",
+      "说得对",
+      "我同意",
+      "认可"
+    ],
+    "questioning": [
+      "但是",
+      "不过",
+      "然而",
+      "不同",
+      "不同意",
+      "我觉得",
+      "可能有",
+      "不确定",
+      "问题是",
+      "其实",
+      "相反"
+    ],
+    "empathy": [
+      "理解",
+      "感受",
+      "明白",
+      "懂得",
+      "体会到",
+      "的心情",
+      "的想法"
+    ]
+  },
+  "statistics": {
+    "total_conversations": 4,
+    "agreement_count": 3,
+    "questioning_count": 0,
+    "empathy_count": 0
+  }
+}
