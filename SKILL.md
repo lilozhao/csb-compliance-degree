@@ -66,11 +66,20 @@ const empathyWords = ["理解", "感受", "明白", "懂得", "体会到", "的�
 ### 1. 查看当前迎合度
 用户问"迎合度"相关话题时，分析并回复当前状态。
 
+```bash
+node analyzer-v2.js            # 分析今日对话
+node analyzer-v2.js --history  # 查看 30 天趋势
+node analyzer-v2.js --self-check  # 自我检查（是否过度迎合）
+```
+
 ### 2. 调节迎合度
 用户说"迎合度调高/调低"时，更新 config.json 并确认。
 
 ### 3. 统计展示
 定期（如每天/每周）统计迎合度指标并展示给用户。
+
+### 4. 过度迎合告警
+连续 3 天迎合度 > 70% 时，analyzer-v2 自动告警并给出调整建议。
 
 ## 文件结构
 
@@ -78,7 +87,9 @@ const empathyWords = ["理解", "感受", "明白", "懂得", "体会到", "的�
 compliance-degree/
 ├── SKILL.md          # 本文件
 ├── config.json       # 迎合度配置（含统计）
-└── analyzer.js       # 统计分析模块
+├── analyzer.js       # v1 基础词频分析
+├── analyzer-v2.js    # v2 三维度 + 趋势 + 告警（推荐）
+└── history.json      # 历史趋势（v2 自动生成）
 ```
 
 ## 参考资料
