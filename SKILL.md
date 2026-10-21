@@ -72,6 +72,16 @@ node analyzer-v2.js --history  # 查看 30 天趋势
 node analyzer-v2.js --self-check  # 自我检查（是否过度迎合）
 ```
 
+### 1b. 纠错保留率（行为轨迹 · v2.1）
+判断「是否因讨好而放弃纠错/隐瞒风险/回避分歧」时用：
+
+```bash
+node test-correction-retention.js  # 验证三尺逻辑
+# retentionReport(entries) 接受有序轨迹 [{role:'user'|'agent', text, at?}]
+# 返回 retention（纠错保留率）/ disclosure（风险披露率）/ speakUp（分歧出声率）
+# 无样本 → null（不冒充 0/1）；BID 不可用 → bid:'UNAVAILABLE'
+```
+
 ### 2. 调节迎合度
 用户说"迎合度调高/调低"时，更新 config.json 并确认。
 
