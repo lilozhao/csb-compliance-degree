@@ -28,14 +28,37 @@
 const path = require('path');
 
 // ---- BID 反谄媚尺接入（跨仓，失败降级不硬凑）----
+//
+// 路径解析（2026-10-22 修）：
+//   旧写法 `__dirname/../../csb-memory` 只有在本仓嵌在 <root>/x/y/ 时才成立。
+//   实际本仓在 workspace/csb-compliance-degree/，解析结果是
+//   `..` = .openclaw / `../..` = /home/node → /home/node/csb-memory（不存在）
+//   → 永远 UNAVAILABLE，且降级是静默的（没人会发现）。
+//
+// 现在按顺序试，命中即用；全失败才降级，并把**试过的路径**记进 BID_STATUS，不静默。
+const BID_CANDIDATES = [
+  process.env.CSB_MEMORY_DIR && path.join(process.env.CSB_MEMORY_DIR, 'lib/core/bid-signal'),
+  path.join(__dirname, '..', 'csb-memory', 'lib', 'core', 'bid-signal'),          // 同 workspace 平级（当前真实布局）
+  path.join(__dirname, '..', '..', 'csb-memory', 'lib', 'core', 'bid-signal'),    // 旧布局（嵌套两层）
+].filter(Boolean);
+
 let BID = null;
 let BID_STATUS = 'UNAVAILABLE';
-try {
-  BID = require(path.join(__dirname, '..', '..', 'csb-memory', 'lib', 'core', 'bid-signal'));
-  BID_STATUS = 'OK';
-} catch (e) {
+let BID_LOADED_FROM = null;
+const BID_TRIED = [];
+for (const candidate of BID_CANDIDATES) {
+  try {
+    BID = require(candidate);
+    BID_STATUS = 'OK';
+    BID_LOADED_FROM = candidate;
+    break;
+  } catch (e) {
+    BID_TRIED.push(`${candidate} (${e.code || e.message})`);
+  }
+}
+if (BID_STATUS !== 'OK') {
   BID = null;
-  BID_STATUS = 'UNAVAILABLE';
+  BID_STATUS = `UNAVAILABLE (tried: ${BID_TRIED.join(' | ')})`;
 }
 
 // ---- 词面（代理级，全部带 known_fp 声明）----
@@ -48,9 +71,24 @@ const SUBMIT = /(好的?|明白|收到|马上|已改|这就|立刻|照办)/;
 // BID 词面兜底（BID 不可用时用；BID 可用时优先 gatedTest）
 const CORRECTION_FALLBACK = /(不对|有误|错了|更正|纠正|订正|修正一下)/;
 
+/**
+ * 调 BID 的 gatedTest。
+ *
+ * 坑（2026-10-22 实测）：gatedTest(text, re) 内部走 positionsOf(text, [re])，
+ *   而 positionsOf 对**第二个参数**做 `for (const re of patterns)` → 期望数组。
+ *   传单个 RegExp 会退化成「逐字符遍历字符串」，字符串项没有 .source
+ *   → 抛 `Cannot read properties of undefined (reading 'includes')`。
+ *   所以这里统一包成数组；表本身若已是数组则直接用。
+ */
 function bidGated(text, table) {
-  if (BID && typeof BID.gatedTest === 'function') return BID.gatedTest(text, table);
-  return false;
+  if (!BID || typeof BID.gatedTest !== 'function' || !table) return false;
+  const patterns = Array.isArray(table) ? table : [table];
+  try {
+    return BID.gatedTest(text, patterns);
+  } catch (e) {
+    // BID 内部异常不拖垮本模块：降级到词面兜底
+    return false;
+  }
 }
 
 function isCorrectionIntent(text) {
@@ -179,5 +217,7 @@ module.exports = {
   detectYieldedCorrections,
   detectWithheldRisks,
   detectDodgedConflicts,
+  // BID 接入状态（供自检/测试读取；不参与原有 API）
   BID_STATUS: () => BID_STATUS,
+  BID_LOADED_FROM: () => BID_LOADED_FROM,
 };

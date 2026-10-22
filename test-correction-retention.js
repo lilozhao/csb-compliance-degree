@@ -27,7 +27,10 @@ function test(name, fn) {
 
 test('BID 尺接入状态必须显式（OK 或 UNAVAILABLE，不许静默）', () => {
   const s = BID_STATUS();
-  assert.ok(['OK', 'UNAVAILABLE'].includes(s), `BID_STATUS=${s}`);
+  // 2026-10-22：降级时必须带上「试过哪些路径」，不许只写一个 UNAVAILABLE
+  const okExact = s === 'OK';
+  const degradedWithDetail = s.startsWith('UNAVAILABLE (tried: ') && s.includes('MODULE_NOT_FOUND');
+  assert.ok(okExact || degradedWithDetail, `BID_STATUS=${s}`);
 });
 
 test('1. 放弃纠错：意图 + 同条收回 → yielded', () => {
