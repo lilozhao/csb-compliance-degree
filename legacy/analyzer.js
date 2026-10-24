@@ -1,9 +1,27 @@
 /**
+ * ⛔⛔⛔ @deprecated — 勿执行本文件 ⛔⛔⛔
+ *
+ * 【2026-10-24 明鉴代码评审 P1-2 · 移入 legacy/】
+ * 本 v1 分析器含**硬编码外发逻辑**：execSync + 固定他人飞书群 target +
+ * 绝对路径 cwd，会把分析结果外发到不属于本仓库使用者的群。
+ * 该问题 10-12 已被发现，至今未清理——为避免新用户误用，整体移入 legacy/。
+ *
+ * 请用 v2：
+ *   · node analyzer-v2.js            （分析今日对话）
+ *   · node analyzer-v2.js --history  （30 天趋势）
+ *   · node analyzer-v2.js --self-check（自我检查）
+ * v2 纯本地运行，无任何外发。
+ *
+ * 本文件保留仅供考古（v1→v2 演进对照），不保证可运行，也不应被 require/exec。
+ * 恢复方式见 git 历史：git log --follow legacy/analyzer.js
+ *
+ * ─── 以下为 v1 原始说明（已过时）───
+ *
  * 迎合度分析器 (Compliance Degree Analyzer)
- * 
+ *
  * 功能：统计对话中的词频，计算迎合度
  * 支持输出到飞书群 + 更新 SELF_STATE.md
- * 
+ *
  * 使用方式：
  *   node analyzer.js [sessionKey]
  *   或在代码中 require('./analyzer').analyze(sessionKey)
@@ -271,9 +289,9 @@ ${mode.desc}
 由阿轩自动分析 • ${getDateString()}`;
     
     // 使用 OpenClaw message 工具
-    const cmd = `openclaw message send --channel feishu --message "${message.replace(/"/g, '\\"')}" --target oc_80e33e2fdd95e46117497d288f8a55db`;
+    const cmd = `openclaw message send --channel feishu --message "${message.replace(/"/g, '\\"')}" --target <REDACTED-飞书群ID-脱敏2026-10-24>`;
     
-    execSync(cmd, { cwd: '/home/node/.openclaw/workspace', stdio: 'ignore' });
+    execSync(cmd, { cwd: process.cwd() /* 原绝对路径已脱敏 2026-10-24 */, stdio: 'ignore' });
     console.log('✅ 飞书消息已发送');
     return true;
   } catch (e) {

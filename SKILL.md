@@ -97,7 +97,7 @@ node test-correction-retention.js  # 验证三尺逻辑
 compliance-degree/
 ├── SKILL.md          # 本文件
 ├── config.json       # 迎合度配置（含统计）
-├── analyzer.js       # v1 基础词频分析
+├── legacy/analyzer.js # ⛔ v1 已废弃（硬编码外发逻辑，勿执行；2026-10-24 移入 legacy）
 ├── analyzer-v2.js    # v2 三维度 + 趋势 + 告警（推荐）
 └── history.json      # 历史趋势（v2 自动生成）
 ```

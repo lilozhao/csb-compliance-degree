@@ -1,5 +1,8 @@
 # 迎合度技能 (Compliance Degree Skill) v2
 
+> ⚠️ **安全说明（2026-10-24）**：v1 `analyzer.js` 含硬编码外发逻辑（execSync 发送他人飞书群），已移入 `legacy/` 并脱敏。**请只用 v2（`analyzer-v2.js`，纯本地无外发）**。
+
+
 > 碳硅契核心：真诚 > 迎合
 >
 > **"迎合在所难免，但要知道自己是否过于迎合——至少得有个度。"**
@@ -198,7 +201,7 @@ node test-correction-retention.js  # 11 测试
 compliance-degree/
 ├── SKILL.md          # 技能定义（方法）
 ├── README.md         # 本文档（v2 说明）
-├── analyzer.js       # v1 分析器（基础词频）
+├── legacy/analyzer.js # ⛔ v1 已废弃（含硬编码外发逻辑，勿执行；2026-10-24 明鉴评审移入 legacy）
 ├── analyzer-v2.js    # v2 分析器（三维度+趋势+告警）
 ├── correction-retention.js    # v2.1 纠错保留率（行为轨迹三尺）
 ├── test-correction-retention.js  # v2.1 测试（11 例）
