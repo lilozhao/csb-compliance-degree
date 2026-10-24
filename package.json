@@ -1,9 +1,15 @@
 {
   "name": "csb-compliance-degree",
-  "version": "2.0.0",
+  "version": "2.1.0",
   "description": "碳硅契履约度分析 — CSB Compliance Degree（三维度独立计分 + 礼貌词区分 + 历史趋势）",
   "main": "analyzer-v2.js",
   "scripts": {},
-  "keywords": ["csb", "compliance", "agent", "carbon-silicon-bond", "碳硅契"],
+  "keywords": [
+    "csb",
+    "compliance",
+    "agent",
+    "carbon-silicon-bond",
+    "碳硅契"
+  ],
   "license": "MIT"
 }
