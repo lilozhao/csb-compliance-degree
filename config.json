@@ -69,5 +69,7 @@
     "agreement_count": 3,
     "questioning_count": 0,
     "empathy_count": 0
-  }
+  },
+  "config_version": "1",
+  "config_hash": "crit_d8992c78e53d3f8a"
 }
