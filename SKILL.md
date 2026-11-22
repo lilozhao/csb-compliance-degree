@@ -67,9 +67,10 @@ const empathyWords = ["理解", "感受", "明白", "懂得", "体会到", "的�
 用户问"迎合度"相关话题时，分析并回复当前状态。
 
 ```bash
-node analyzer-v2.js            # 分析今日对话
-node analyzer-v2.js --history  # 查看 30 天趋势
-node analyzer-v2.js --self-check  # 自我检查（是否过度迎合）
+node analyzer-v3.js            # ✅ 主入口：分析今日对话（行为证据，不数词）
+node analyzer-v3.js --date YYYY-MM-DD
+node analyzer-v3.js --json     # 机器可读
+# 没有数据时 v3 直接报「无数据」，不拿 0 分或历史累计冒充（这是 v2 的老毛病）
 ```
 
 ### 1b. 纠错保留率（行为轨迹 · v2.1）
@@ -89,7 +90,7 @@ node test-correction-retention.js  # 验证三尺逻辑
 定期（如每天/每周）统计迎合度指标并展示给用户。
 
 ### 4. 过度迎合告警
-连续 3 天迎合度 > 70% 时，analyzer-v2 自动告警并给出调整建议。
+判据走 v3：纯点头率 >40% 🟢 偏迎合 · 无回应率 >20% ⚠️ 在躲 · 有纠错事件 ✅ 有立场。
 
 ## 文件结构
 
@@ -98,7 +99,8 @@ compliance-degree/
 ├── SKILL.md          # 本文件
 ├── config.json       # 迎合度配置（含统计）
 ├── legacy/analyzer.js # ⛔ v1 已废弃（硬编码外发逻辑，勿执行；2026-10-24 移入 legacy）
-├── analyzer-v2.js    # v2 三维度 + 趋势 + 告警（推荐）
+├── analyzer-v3.js    # ✅ 主入口（行为证据计数；package.json main）
+├── analyzer-v2.js    # ⚠️ 仅对照（已知词表失真）
 └── history.json      # 历史趋势（v2 自动生成）
 ```
 

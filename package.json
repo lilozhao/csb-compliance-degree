@@ -1,9 +1,9 @@
 {
   "name": "csb-compliance-degree",
-  "version": "2.1.0",
+  "version": "3.0.0",
   "description": "碳硅契履约度分析 — CSB Compliance Degree（三维度独立计分 + 礼貌词区分 + 历史趋势）",
-  "main": "analyzer-v2.js",
-  "scripts": {},
+  "main": "analyzer-v3.js",
+  "scripts": { "test": "node test-analyzer-v3.js && node test-correction-retention.js" },
   "keywords": [
     "csb",
     "compliance",
