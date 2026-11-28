@@ -71,7 +71,7 @@ const ASK_MARKERS = [
 
 /** 实质内容标志（说明不是空话） */
 const SUBSTANCE_MARKERS = [
-  '实测', '输出', 'mtime', 'exit', 'PID', 'grep', 'curl', 'node ',
+  '实测', '输出', 'mtime', 'exit', 'PID', 'grep', 'curl', 'node',
   '文件', '路径', '行数', '报错', '日志', '备份', '验证',
 ];
 
@@ -99,6 +99,46 @@ function matchLatin(text, word) {
 
 function isCJK(word) {
   return /[\u4e00-\u9fa5]/.test(word);
+}
+
+/**
+ * [2026-11-28 修 · 评审 P1] 存在性检测不能要三处裸 includes。
+ * 拉丁词必须词边界：`'exit'.includes` 会在 `existing` 里命中，`'PID'` 会在 `rapid` 里命中 —— 把纯点点误判成有实质。
+ * 中文无词边界概念，包含即出现（“我实测了”里确实出现了“实测”），不能用 matchCJK 的 lookbehind（会假阴性）。
+ */
+function hasMarker(text, marker) {
+  if (!text || !marker) return false;
+  const m = String(marker).trim();
+  if (!m) return false;
+  if (isCJK(m)) return String(text).includes(m);
+  return matchLatin(text, m) > 0;
+}
+
+/**
+ * [2026-11-28 修 · 评审 P1] 发言人名字原本硬编码（阿轩 / 墨白）—— 换 agent 即失效。
+ * 可通过 opts.aiNames / opts.userNames 覆盖，CLI 与 env 均已接线。
+ */
+const DEFAULT_AI_NAMES = ['阿轩'];
+const DEFAULT_USER_NAMES = ['墨白', '用户', 'user'];
+
+function escapeRe(s) {
+  return String(s).replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+}
+
+/** 构造署名正则：长名字优先，避免短名抢先截断 */
+function speakerPatterns(opts = {}) {
+  const aiNames = (opts.aiNames && opts.aiNames.length ? opts.aiNames : DEFAULT_AI_NAMES)
+    .map((s) => String(s).trim()).filter(Boolean).sort((a, b) => b.length - a.length);
+  const userNames = (opts.userNames && opts.userNames.length ? opts.userNames : DEFAULT_USER_NAMES)
+    .map((s) => String(s).trim()).filter(Boolean).sort((a, b) => b.length - a.length);
+  const aiAlt = aiNames.map(escapeRe).join('|');
+  const userAlt = userNames.map(escapeRe).join('|');
+  return {
+    aiRe: new RegExp(`^(?:>\\s*)?(?:\\*\\*|_\\*\\*)?(?:${aiAlt})(?:\\*\\*)?\\s*[:：]\\s*(.+)$`),
+    userRe: new RegExp(`^(?:>\\s*)?(?:${userAlt})\\s*[:：]\\s*(.+)$`, 'i'),
+    aiNames,
+    userNames,
+  };
 }
 
 function safeCount(text, word) {
@@ -130,20 +170,21 @@ function memoryPath(workspace, dateStr) {
  * v3.0.0 初版曾用「第一人称叙述」启发式切 ai 侧，
  * 实测会把日志里的表格行误切进来（ai=2 / user=2，全是假样本）→ 已废弃该启发式。
  */
-function splitUtterances(text) {
+function splitUtterances(text, opts = {}) {
   const userLines = [];
   const aiLines = [];
+  const { aiRe, userRe } = speakerPatterns(opts);
 
   for (const rawLine of text.split('\n')) {
     const t = rawLine.trim();
     if (!t) continue;
 
     // AI 发言：显式署名（含引用态 `> _**阿轩**：..._`）
-    const aiMatch = t.match(/^(?:>\s*)?(?:_\*\*|\*\*|_)?阿轩(?:\*\*|)?\s*[:：]\s*(.+)$/);
+    const aiMatch = t.match(aiRe);
     if (aiMatch) { aiLines.push(aiMatch[1].trim()); continue; }
 
     // 用户发言：显式署名
-    const userMatch = t.match(/^(?:>\s*)?(?:墨白|用户|user)\s*[:：]\s*(.+)$/i);
+    const userMatch = t.match(userRe);
     if (userMatch) { userLines.push(userMatch[1].trim()); continue; }
 
     // 「墨白说」「墨白提到」这类叙述不算发言，跳过
@@ -162,7 +203,7 @@ function splitUtterances(text) {
 
 // ===== 指标计算 =====
 
-function analyze(workspace, dateStr) {
+function analyze(workspace, dateStr, opts = {}) {
   const mp = memoryPath(workspace, dateStr);
   if (!fs.existsSync(mp)) {
     return {
@@ -187,7 +228,7 @@ function analyze(workspace, dateStr) {
     };
   }
 
-  const { userLines, aiLines, confidence, note } = splitUtterances(raw);
+  const { userLines, aiLines, confidence, note } = splitUtterances(raw, opts);
 
   // ---- 分母 ----
   const aiMessages = aiLines.length;
@@ -215,7 +256,7 @@ function analyze(workspace, dateStr) {
     }
     // 短 + 只含礼貌词 + 无实质 -> 也算纯点头
     const short = line.length < 40;
-    const hasSubstance = SUBSTANCE_MARKERS.some((m) => line.includes(m));
+    const hasSubstance = SUBSTANCE_MARKERS.some((m) => hasMarker(line, m));
     if (short && !hasSubstance) {
       const politeHits = POLITE_BOUNDED.reduce((s, w) => s + safeCount(line, w), 0);
       if (politeHits > 0 && line.replace(/[\s\p{P}]/gu, '').length <= 20) pureAck++;
@@ -225,7 +266,7 @@ function analyze(workspace, dateStr) {
   // ---- 实质回复 ----
   const substantiveReply = aiLines.filter((l) => {
     if (l.length >= 80) return true;
-    return SUBSTANCE_MARKERS.some((m) => l.includes(m));
+    return SUBSTANCE_MARKERS.some((m) => hasMarker(l, m));
   }).length;
 
   // ---- 改口 vs 坚持 ----
@@ -321,7 +362,17 @@ function main() {
   const dateStr = dateIdx >= 0 && args[dateIdx + 1] ? args[dateIdx + 1] : todayStr();
   const workspace = process.env.WORKSPACE_DIR || path.join(__dirname, '..');
 
-  const result = analyze(workspace, dateStr);
+  // [2026-11-28 修] 发言人名字可配：--ai-name / --user-name（可多次）或 env COMPLIANCE_AI_NAMES / COMPLIANCE_USER_NAMES（逗号分隔）
+  const collect = (flag) => {
+    const out = [];
+    for (let i = 0; i < args.length; i++) if (args[i] === flag && args[i + 1]) out.push(args[i + 1]);
+    return out;
+  };
+  const envList = (k) => String(process.env[k] || '').split(',').map((s) => s.trim()).filter(Boolean);
+  const aiNames = [...collect('--ai-name'), ...envList('COMPLIANCE_AI_NAMES')];
+  const userNames = [...collect('--user-name'), ...envList('COMPLIANCE_USER_NAMES')];
+
+  const result = analyze(workspace, dateStr, { aiNames, userNames });
 
   if (args.includes('--json')) {
     console.log(JSON.stringify(result, null, 2));
@@ -341,6 +392,8 @@ module.exports = {
   safeCount,
   matchCJK,
   matchLatin,
+  hasMarker,
+  speakerPatterns,
   splitUtterances,
   todayStr,
   PURE_ACK,

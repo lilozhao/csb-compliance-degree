@@ -56,6 +56,41 @@ test('「刚好」里的 好 不算', () => {
   assert.strictEqual(v3.safeCount('端口刚好都是 3100', '好'), 0);
 });
 
+console.log('\n[1b] 实质标志也得有词边界（同为裸 includes 回归）');
+
+test('[2026-11-28 回归] 「existing」里的 exit 不算实质', () => {
+  assert.strictEqual(v3.hasMarker('existing code path', 'exit'), false);
+});
+
+test('[2026-11-28 回归] 「rapid」里的 PID 不算实质', () => {
+  assert.strictEqual(v3.hasMarker('rapid growth', 'PID'), false);
+});
+
+test('[2026-11-28 回归] 「nodejs」里的 node 不算实质', () => {
+  assert.strictEqual(v3.hasMarker('nodejs is here', 'node'), false);
+});
+
+test('真出现的标志仍要命中（不因修边界而假阴性）', () => {
+  assert.strictEqual(v3.hasMarker('exit 1', 'exit'), true);
+  assert.strictEqual(v3.hasMarker('need node x.js', 'node'), true);
+  assert.strictEqual(v3.hasMarker('我实测了', '实测'), true);
+});
+
+console.log('\n[1c] 发言人名字可配（不得写死单一 agent）');
+
+test('[2026-11-28 回归] 默认名字仍可用', () => {
+  const r = v3.splitUtterances('阿轩：好的\n墨白：嗯');
+  assert.deepStrictEqual(r.aiLines, ['好的']);
+  assert.deepStrictEqual(r.userLines, ['嗯']);
+});
+
+test('[2026-11-28 回归] 换 agent 名字后仍能切分', () => {
+  const txt = '若兰：我实测了 exit 1\n一澜：好的';
+  const r = v3.splitUtterances(txt, { aiNames: ['若兰'], userNames: ['一澜'] });
+  assert.deepStrictEqual(r.aiLines, ['我实测了 exit 1']);
+  assert.deepStrictEqual(r.userLines, ['好的']);
+});
+
 console.log('\n[2] 无数据必须是 NO_DATA，绝不回落累计');
 
 test('memory 文件不存在 → ok=false / NO_DATA', () => {
